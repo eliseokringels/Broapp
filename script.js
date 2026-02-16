@@ -1,4 +1,4 @@
-// Firebase Konfiguration (Deine funktionierende Datenbank-Verbindung)
+// Firebase Konfiguration
 const firebaseConfig = {
     apiKey: "AIzaSyBPonFpwT09cQn5cBQjg9yZV3QltDCPrTg",
     authDomain: "silvere-hordang-janson5.firebaseapp.com",
@@ -8,33 +8,32 @@ const firebaseConfig = {
     appId: "1:729534477928:web:28c3618d5248aa31e06ddd"
 };
 
-// Firebase initialisieren (Compat Modus)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const correctPin = "pwa"; 
-const LOGOUT_TIME = 60 * 60 * 1000; // 1 Stunde Session-Dauer
-const schluessel = 4; // Schlüssel für die Jarvis-Verschlüsselung
+const LOGOUT_TIME = 60 * 60 * 1000; 
+const schluessel = 4;
+
+// Zuordnung für Sonderzeichen
+const specialChars = {
+    "!": "99",
+    "?": "98",
+    "%": "97",
+    "&": "96",
+    '"': "95"
+};
 
 window.onload = () => {
-    // Biometrie-Button anzeigen, wenn vom Browser unterstützt
     if (window.PublicKeyCredential) {
         const bioBtn = document.getElementById("biometricBtn");
         if(bioBtn) bioBtn.style.display = "block";
     }
-    
     checkSessionTimeout();
-    
-    // Automatisch einloggen, wenn die Session noch aktiv ist
-    if (sessionStorage.getItem("authenticated") === "true") {
-        switchView('mainMenu');
-    }
-    
-    // Counter in Echtzeit von Firebase laden
+    if (sessionStorage.getItem("authenticated") === "true") switchView('mainMenu');
     loadCounters();
 };
 
-// --- NAVIGATION (Wechsel zwischen den Bereichen) ---
 function switchView(viewId) {
     const views = ["loginView", "mainMenu", "appView", "counterView"];
     views.forEach(v => {
@@ -45,16 +44,10 @@ function switchView(viewId) {
     if(target) target.classList.remove("hidden");
 }
 
-// --- LOGIN SYSTEM ---
 function checkPin() {
     const pinInput = document.getElementById("pinInput");
-    const errorMsg = document.getElementById("errorMessage");
-    
-    if (pinInput.value === correctPin) {
-        loginSuccess();
-    } else {
-        errorMsg.textContent = "ZUTRITT VERWEIGERT: SYSTEM GESPERRT";
-    }
+    if (pinInput.value === correctPin) loginSuccess();
+    else document.getElementById("errorMessage").textContent = "ZUTRITT VERWEIGERT";
 }
 
 function loginSuccess() {
@@ -63,19 +56,14 @@ function loginSuccess() {
     switchView('mainMenu');
 }
 
-function logout() { 
-    sessionStorage.clear(); 
-    location.reload(); 
-}
+function logout() { sessionStorage.clear(); location.reload(); }
 
 function checkSessionTimeout() {
     const loginTime = sessionStorage.getItem("loginTimestamp");
-    if (loginTime && (new Date().getTime() - loginTime > LOGOUT_TIME)) {
-        logout();
-    }
+    if (loginTime && (new Date().getTime() - loginTime > LOGOUT_TIME)) logout();
 }
 
-// --- JARVIS CODER (Verschlüsselungs-Logik) ---
+// --- JARVIS CODER ---
 function processMessage(mode) {
     const scanner = document.getElementById("scannerLine");
     const input = document.getElementById("messageInput");
@@ -83,56 +71,73 @@ function processMessage(mode) {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
 
     if (!input || !input.value) return;
-    
-    // Scanner-Animation starten
     scanner.classList.add("active-scan");
     
     setTimeout(() => {
         let result = "";
-        const val = input.value.toLowerCase();
         
         if (mode === 'encode') {
-            // Umwandlung in Zahlen-Code
+            const val = input.value.toLowerCase();
             let encodedParts = [];
             for (let char of val) {
-                let index = alphabet.indexOf(char);
-                if (index !== -1) {
-                    let shifted = (index + 1 + schluessel - 1) % 26 + 1;
-                    encodedParts.push(shifted);
+                if (char === " ") {
+                    encodedParts.push("-"); // Leerzeichen als Bindestrich codieren
+                } else if (specialChars[char]) {
+                    encodedParts.push(specialChars[char]); 
                 } else {
-                    encodedParts.push(char);
+                    let index = alphabet.indexOf(char);
+                    if (index !== -1) {
+                        let shifted = (index + 1 + schluessel - 1) % 26 + 1;
+                        encodedParts.push(shifted);
+                    } else {
+                        encodedParts.push(char);
+                    }
                 }
             }
             result = encodedParts.join(" ");
             input.value = ""; 
         } else {
-            // Umwandlung zurück in Text
-            let parts = input.value.split(" ");
+            let parts = input.value.trim().split(" ");
             for (let teil of parts) {
-                let zahl = parseInt(teil);
-                if (!isNaN(zahl)) {
-                    let originalIdx = (zahl - schluessel - 1 + 26) % 26;
-                    result += alphabet[originalIdx];
+                if (teil === "-") {
+                    result += " "; // Bindestrich zurück in Leerzeichen
                 } else {
-                    result += teil;
+                    let foundSpecial = Object.keys(specialChars).find(key => specialChars[key] === teil);
+                    if (foundSpecial) {
+                        result += foundSpecial;
+                    } else {
+                        let zahl = parseInt(teil);
+                        if (!isNaN(zahl)) {
+                            let originalIdx = (zahl - schluessel - 1 + 26) % 26;
+                            result += alphabet[originalIdx];
+                        } else {
+                            result += teil;
+                        }
+                    }
                 }
             }
         }
         
         out.textContent = result;
         scanner.classList.remove("active-scan");
-    }, 1200); // Verzögerung für den Effekt
+    }, 1200);
 }
 
-// --- REALTIME COUNTER (Firebase-Anbindung) ---
+// NEUE FUNKTION: Felder leeren
+function clearInput() {
+    const input = document.getElementById("messageInput");
+    const out = document.getElementById("output");
+    if(input) input.value = "";
+    if(out) out.textContent = "Bereit...";
+}
+
+// --- REALTIME COUNTER ---
 function loadCounters() {
     db.ref("counters").on("value", (snapshot) => {
         const data = snapshot.val();
         const container = document.getElementById("counterContainer");
         if(!container) return;
-        
         container.innerHTML = "";
-        
         if (data) {
             Object.keys(data).forEach(id => {
                 const c = data[id];
@@ -158,11 +163,7 @@ function addNewCounter() {
     const nameInput = document.getElementById("newCounterName");
     const name = nameInput.value.trim();
     if (!name) return;
-    
-    db.ref("counters").push({ 
-        name: name, 
-        value: 0 
-    });
+    db.ref("counters").push({ name: name, value: 0 });
     nameInput.value = "";
 }
 
@@ -172,27 +173,19 @@ function updateCounter(id, delta) {
 }
 
 function deleteCounter(id) {
-    if(confirm("Eintrag in der Jarvis-Datenbank löschen?")) {
-        db.ref("counters/" + id).remove();
-    }
+    if(confirm("Löschen?")) db.ref("counters/" + id).remove();
 }
 
-// --- UTILS (Kopieren & Teilen) ---
 function copyText() { 
     const text = document.getElementById("output").textContent;
     if(text && text !== "Bereit...") {
         navigator.clipboard.writeText(text); 
-        alert("Daten in Zwischenablage gesichert."); 
+        alert("Kopiert."); 
     }
 }
 
 async function shareText() { 
     const text = document.getElementById("output").textContent;
     if(!text || text === "Bereit...") return;
-    
-    try { 
-        await navigator.share({ text: text }); 
-    } catch(e) {
-        console.log("Teilen nicht möglich");
-    } 
+    try { await navigator.share({ text: text }); } catch(e) {} 
 }
