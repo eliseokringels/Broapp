@@ -1,0 +1,57 @@
+# Alphabet
+alphabet = "abcdefghijklmnopqrstuvwxyz"
+
+# Buchstabe -> Zahl (a=1 ... z=26)
+buchstabe_zu_zahl = {buchstabe: index + 1 for index, buchstabe in enumerate(alphabet)}
+
+# Zahl -> Buchstabe
+zahl_zu_buchstabe = {index + 1: buchstabe for index, buchstabe in enumerate(alphabet)}
+
+# Schlüssel (kannst du ändern)
+schluessel = 4
+
+
+def encode(text):
+    text = text.lower()
+    code = []
+
+    for zeichen in text:
+        if zeichen in buchstabe_zu_zahl:
+            zahl = buchstabe_zu_zahl[zeichen]
+
+            # Modulo 26 sorgt dafür,
+            # dass wir nach z wieder bei a anfangen
+            verschoben = (zahl + schluessel - 1) % 26 + 1
+
+            code.append(str(verschoben))
+        else:
+            code.append(zeichen)
+
+    return " ".join(code)
+
+
+def decode(code):
+    teile = code.split()
+    text = ""
+
+    for teil in teile:
+        if teil.isdigit():
+            zahl = int(teil)
+
+            original = (zahl - schluessel - 1) % 26 + 1
+
+            text += zahl_zu_buchstabe[original]
+        else:
+            text += teil
+
+    return text
+
+
+# ===== START =====
+text = input("Gib einen Text ein: ")
+
+geheim = encode(text)
+print("Geheimcode:", geheim)
+
+wieder = decode(geheim)
+print("Zurück entschlüsselt:", wieder)

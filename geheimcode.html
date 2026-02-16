@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SilverE HordanG Janson5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+</head>
+<body>
+
+<video autoplay muted loop playsinline id="bgVideo">
+    <source src="hintergrund.mp4" type="video/mp4">
+</video>
+
+<div class="container">
+    
+    <div id="loginView">
+        <h1 class="glow-text">LOGIN</h1>
+        <input type="password" id="pinInput" placeholder="PIN EINGEBEN">
+        <button onclick="checkPin()" class="neon-blue">LOGIN</button>
+        <button id="biometricBtn" onclick="tryBiometric()" class="small-btn glass-btn" style="margin-top: 15px; display: none;">BIOMETRIE</button>
+        <p id="errorMessage" class="error"></p>
+    </div>
+
+    <div id="mainMenu" class="hidden">
+        <h1 class="glow-text">Optionen</h1>
+        <div class="menu-grid">
+            <button onclick="switchView('appView')" class="neon-blue">CODER</button>
+            <button onclick="switchView('counterView')" class="neon-green">COUNTER</button>
+        </div>
+        <button onclick="logout()" class="logout-btn">LOGOUT</button>
+    </div>
+
+    <div id="appView" class="hidden">
+        <h1 class="glow-text">CODER</h1>
+        <button onclick="switchView('mainMenu')" class="small-btn glass-btn">ZURÜCK</button>
+        
+        <div class="scanner-container">
+            <div id="scannerLine" class="scanner"></div>
+            <textarea id="messageInput" placeholder="Nachricht oder Code..."></textarea>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="processMessage('encode')" class="neon-blue">CODE</button>
+            <button onclick="processMessage('decode')" class="neon-blue">DECODE</button>
+        </div>
+        
+        <div id="output" class="glass-panel">Bereit...</div>
+        
+        <div class="action-buttons">
+            <button onclick="copyText()" class="small-btn neon-green">KOPIEREN</button>
+            <button onclick="shareText()" class="small-btn neon-blue-light">TEILEN</button>
+        </div>
+    </div>
+
+    <div id="counterView" class="hidden">
+        <h1 class="glow-text">COUNTER</h1>
+        <button onclick="switchView('mainMenu')" class="small-btn glass-btn">ZURÜCK</button>
+        
+        <div class="add-counter-box">
+            <input type="text" id="newCounterName" placeholder="Zähler Name (z.B. Bier)">
+            <button onclick="addNewCounter()" class="neon-green" style="margin-top: 10px;">HINZUFÜGEN</button>
+        </div>
+
+        <div id="counterContainer">
+            </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<script src="script.js"></script>
+
+</body>
+</html>
