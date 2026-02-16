@@ -1,4 +1,4 @@
-// Firebase Konfiguration aus deinem Screenshot
+// Firebase Konfiguration (Deine funktionierende Datenbank-Verbindung)
 const firebaseConfig = {
     apiKey: "AIzaSyBPonFpwT09cQn5cBQjg9yZV3QltDCPrTg",
     authDomain: "silvere-hordang-janson5.firebaseapp.com",
@@ -13,29 +13,48 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const correctPin = "pwa"; 
-const LOGOUT_TIME = 60 * 60 * 1000; 
-const schluessel = 4;
+const LOGOUT_TIME = 60 * 60 * 1000; // 1 Stunde Session-Dauer
+const schluessel = 4; // Schlüssel für die Jarvis-Verschlüsselung
 
 window.onload = () => {
-    if (window.PublicKeyCredential) document.getElementById("biometricBtn").style.display = "block";
+    // Biometrie-Button anzeigen, wenn vom Browser unterstützt
+    if (window.PublicKeyCredential) {
+        const bioBtn = document.getElementById("biometricBtn");
+        if(bioBtn) bioBtn.style.display = "block";
+    }
+    
     checkSessionTimeout();
-    if (sessionStorage.getItem("authenticated") === "true") switchView('mainMenu');
+    
+    // Automatisch einloggen, wenn die Session noch aktiv ist
+    if (sessionStorage.getItem("authenticated") === "true") {
+        switchView('mainMenu');
+    }
     
     // Counter in Echtzeit von Firebase laden
     loadCounters();
 };
 
-// --- NAVIGATION ---
+// --- NAVIGATION (Wechsel zwischen den Bereichen) ---
 function switchView(viewId) {
     const views = ["loginView", "mainMenu", "appView", "counterView"];
-    views.forEach(v => document.getElementById(v).classList.add("hidden"));
-    document.getElementById(viewId).classList.remove("hidden");
+    views.forEach(v => {
+        const el = document.getElementById(v);
+        if(el) el.classList.add("hidden");
+    });
+    const target = document.getElementById(viewId);
+    if(target) target.classList.remove("hidden");
 }
 
-// --- LOGIN ---
+// --- LOGIN SYSTEM ---
 function checkPin() {
-    if (document.getElementById("pinInput").value === correctPin) loginSuccess();
-    else document.getElementById("errorMessage").textContent = "Piss Dich amk!";
+    const pinInput = document.getElementById("pinInput");
+    const errorMsg = document.getElementById("errorMessage");
+    
+    if (pinInput.value === correctPin) {
+        loginSuccess();
+    } else {
+        errorMsg.textContent = "ZUTRITT VERWEIGERT: SYSTEM GESPERRT";
+    }
 }
 
 function loginSuccess() {
@@ -44,57 +63,74 @@ function loginSuccess() {
     switchView('mainMenu');
 }
 
-function logout() { sessionStorage.clear(); location.reload(); }
+function logout() { 
+    sessionStorage.clear(); 
+    location.reload(); 
+}
 
 function checkSessionTimeout() {
     const loginTime = sessionStorage.getItem("loginTimestamp");
-    if (loginTime && (new Date().getTime() - loginTime > LOGOUT_TIME)) logout();
+    if (loginTime && (new Date().getTime() - loginTime > LOGOUT_TIME)) {
+        logout();
+    }
 }
 
-// --- CODER ---
+// --- JARVIS CODER (Verschlüsselungs-Logik) ---
 function processMessage(mode) {
     const scanner = document.getElementById("scannerLine");
     const input = document.getElementById("messageInput");
     const out = document.getElementById("output");
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
 
-    if (!input.value) return;
+    if (!input || !input.value) return;
+    
+    // Scanner-Animation starten
     scanner.classList.add("active-scan");
     
     setTimeout(() => {
         let result = "";
         const val = input.value.toLowerCase();
+        
         if (mode === 'encode') {
+            // Umwandlung in Zahlen-Code
             let encodedParts = [];
             for (let char of val) {
                 let index = alphabet.indexOf(char);
                 if (index !== -1) {
                     let shifted = (index + 1 + schluessel - 1) % 26 + 1;
                     encodedParts.push(shifted);
-                } else encodedParts.push(char);
+                } else {
+                    encodedParts.push(char);
+                }
             }
             result = encodedParts.join(" ");
             input.value = ""; 
         } else {
+            // Umwandlung zurück in Text
             let parts = input.value.split(" ");
             for (let teil of parts) {
                 let zahl = parseInt(teil);
                 if (!isNaN(zahl)) {
                     let originalIdx = (zahl - schluessel - 1 + 26) % 26;
                     result += alphabet[originalIdx];
-                } else result += teil;
+                } else {
+                    result += teil;
+                }
             }
         }
+        
         out.textContent = result;
         scanner.classList.remove("active-scan");
-    }, 1200);
+    }, 1200); // Verzögerung für den Effekt
 }
 
-// --- REALTIME COUNTER (Zentral für dich und deine Bros) ---
+// --- REALTIME COUNTER (Firebase-Anbindung) ---
 function loadCounters() {
     db.ref("counters").on("value", (snapshot) => {
         const data = snapshot.val();
         const container = document.getElementById("counterContainer");
+        if(!container) return;
+        
         container.innerHTML = "";
         
         if (data) {
@@ -110,7 +146,7 @@ function loadCounters() {
                     <div class="action-buttons" style="margin:0">
                         <button onclick="updateCounter('${id}', -1)" class="neon-red" style="width:45px">-</button>
                         <button onclick="updateCounter('${id}', 1)" class="neon-green" style="width:45px">+</button>
-                        <button onclick="deleteCounter('${id}')" style="width:35px; background:none; color:#ff0055">×</button>
+                        <button onclick="deleteCounter('${id}')" style="width:35px; background:none; color:#ff0055; border:none; cursor:pointer;">×</button>
                     </div>`;
                 container.appendChild(div);
             });
@@ -122,7 +158,11 @@ function addNewCounter() {
     const nameInput = document.getElementById("newCounterName");
     const name = nameInput.value.trim();
     if (!name) return;
-    db.ref("counters").push({ name: name, value: 0 });
+    
+    db.ref("counters").push({ 
+        name: name, 
+        value: 0 
+    });
     nameInput.value = "";
 }
 
@@ -132,8 +172,27 @@ function updateCounter(id, delta) {
 }
 
 function deleteCounter(id) {
-    if(confirm("Löschen?")) db.ref("counters/" + id).remove();
+    if(confirm("Eintrag in der Jarvis-Datenbank löschen?")) {
+        db.ref("counters/" + id).remove();
+    }
 }
 
-function copyText() { navigator.clipboard.writeText(document.getElementById("output").textContent); alert("Kopiert!"); }
-async function shareText() { try { await navigator.share({ text: document.getElementById("output").textContent }); } catch(e) {} }
+// --- UTILS (Kopieren & Teilen) ---
+function copyText() { 
+    const text = document.getElementById("output").textContent;
+    if(text && text !== "Bereit...") {
+        navigator.clipboard.writeText(text); 
+        alert("Daten in Zwischenablage gesichert."); 
+    }
+}
+
+async function shareText() { 
+    const text = document.getElementById("output").textContent;
+    if(!text || text === "Bereit...") return;
+    
+    try { 
+        await navigator.share({ text: text }); 
+    } catch(e) {
+        console.log("Teilen nicht möglich");
+    } 
+}
