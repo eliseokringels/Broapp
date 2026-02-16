@@ -3,6 +3,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyBPonFpwT09cQn5cBQjg9yZV3QltDCPrTg",
     authDomain: "silvere-hordang-janson5.firebaseapp.com",
     projectId: "silvere-hordang-janson5",
+    // ... restliche Config bleibt gleich
     storageBucket: "silvere-hordang-janson5.firebasestorage.app",
     messagingSenderId: "729534477928",
     appId: "1:729534477928:web:28c3618d5248aa31e06ddd"
@@ -15,13 +16,24 @@ const correctPin = "pwa";
 const LOGOUT_TIME = 60 * 60 * 1000; 
 const schluessel = 4;
 
-// Zuordnung für Sonderzeichen
+// Zuordnung für Sonderzeichen und Zahlen
 const specialChars = {
     "!": "99",
     "?": "98",
     "%": "97",
     "&": "96",
-    '"': "95"
+    '"': "95",
+    // Zahlen-Verschlüsselung (80er Bereich)
+    "0": "80",
+    "1": "81",
+    "2": "82",
+    "3": "83",
+    "4": "84",
+    "5": "85",
+    "6": "86",
+    "7": "87",
+    "8": "88",
+    "9": "89"
 };
 
 window.onload = () => {
@@ -63,7 +75,7 @@ function checkSessionTimeout() {
     if (loginTime && (new Date().getTime() - loginTime > LOGOUT_TIME)) logout();
 }
 
-// --- JARVIS CODER ---
+// --- JARVIS CODER (Update: Jetzt auch mit Zahlen) ---
 function processMessage(mode) {
     const scanner = document.getElementById("scannerLine");
     const input = document.getElementById("messageInput");
@@ -81,7 +93,7 @@ function processMessage(mode) {
             let encodedParts = [];
             for (let char of val) {
                 if (char === " ") {
-                    encodedParts.push("-"); // Leerzeichen als Bindestrich codieren
+                    encodedParts.push("-");
                 } else if (specialChars[char]) {
                     encodedParts.push(specialChars[char]); 
                 } else {
@@ -100,7 +112,7 @@ function processMessage(mode) {
             let parts = input.value.trim().split(" ");
             for (let teil of parts) {
                 if (teil === "-") {
-                    result += " "; // Bindestrich zurück in Leerzeichen
+                    result += " ";
                 } else {
                     let foundSpecial = Object.keys(specialChars).find(key => specialChars[key] === teil);
                     if (foundSpecial) {
@@ -123,7 +135,6 @@ function processMessage(mode) {
     }, 1200);
 }
 
-// NEUE FUNKTION: Felder leeren
 function clearInput() {
     const input = document.getElementById("messageInput");
     const out = document.getElementById("output");
@@ -189,3 +200,4 @@ async function shareText() {
     if(!text || text === "Bereit...") return;
     try { await navigator.share({ text: text }); } catch(e) {} 
 }
+
