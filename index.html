@@ -41,6 +41,7 @@
         <div class="scanner-container">
             <div id="scannerLine" class="scanner"></div>
             <textarea id="messageInput" placeholder="Nachricht oder Code..."></textarea>
+            <button onclick="clearInput()" class="small-btn glass-btn" style="margin-top: 8px; width: 100%; font-size: 12px;">EINGABE LÖSCHEN</button>
         </div>
         
         <div class="action-buttons">
@@ -48,7 +49,7 @@
             <button onclick="processMessage('decode')" class="neon-blue">DECODE</button>
         </div>
         
-        <div id="output" class="glass-panel">System bereit...</div>
+        <div id="output" class="glass-panel">Bereit...</div>
         
         <div class="action-buttons">
             <button onclick="copyText()" class="small-btn neon-green">KOPIEREN</button>
@@ -65,14 +66,12 @@
             <button onclick="addNewCounter()" class="neon-green" style="margin-top: 10px;">HINZUFÜGEN</button>
         </div>
 
-        <div id="counterContainer">
-            </div>
+        <div id="counterContainer"></div>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
 <script src="script.js"></script>
 
 </body>
